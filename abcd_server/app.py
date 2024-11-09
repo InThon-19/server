@@ -36,6 +36,13 @@ def transformPost(post):
         post["_id"] = str(post["_id"])
     return post
 
+
+def transformPostList(pl):
+    for post in pl:
+        if "_id" in post:
+            post["_id"] = str(post["_id"])
+        return post
+
 # @@ APIHandler ############################
 
 
@@ -265,8 +272,8 @@ async def getFeed():
         formatted_post = {
             "_id": post["_id"],
             "UserId": transformPost(user_info),
-            "Records": post.get("Records", []),
-            "Comments": post.get("Comments", []),
+            "Records": transformPostList(post.get("Records", [])),
+            "Comments": transformPostList(post.get("Comments", [])),
             "Visibility": post.get("Visibility", True),
             "Date": post["Date"] if is_yesterday else None,
             "Rating": calculateRating(post),
@@ -276,7 +283,7 @@ async def getFeed():
 
         data.append(transformPost(formatted_post))
 
-    return {"data": data}
+    return {"data": transformPostList(data)}
 
 
 def to_object_id(id: str):
