@@ -40,7 +40,7 @@ async def checkStatus():
 
 
 @app.get("/api/user/{userId}", tags=["API"])
-async def check_user_exists(userId: str):
+async def checkUserExists(userId: str):
     user = user_collection.find_one({"UserId": userId})
     if user:
         return {"data": {}}
@@ -49,7 +49,7 @@ async def check_user_exists(userId: str):
 
 
 @app.post("/api/user/{userId}", tags=["API"])
-async def register_user(userId: str, request: Request):
+async def registerUser(userId: str, request: Request):
     data = await request.json()
 
     existing_user = user_collection.find_one({"UserId": userId})
