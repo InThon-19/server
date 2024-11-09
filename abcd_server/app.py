@@ -232,6 +232,9 @@ def get_top_commented_posts():
     ])
 
     result = list(posts)
+    for post in result:
+        post["Rating"] = calculateRating(post)
+        post["SelfRating"] = calculateSelfRating(post)
 
     for post in result:
         if "_id" in post.keys():
