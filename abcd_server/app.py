@@ -73,6 +73,40 @@ async def registerUser(userId: str, request: Request):
     }
 
 
+@app.get("/api/post", tags=["API"])
+async def getCalendarPost(year: int, month: int, user_id: str):
+    start_date = datetime(year, month, 1)
+    if month == 12:
+        end_date = datetime(year+1, 1, 1)
+    else:
+        end_date = datetime(year, month+1, 1)
+
+    posts_in_month = post_collection.find({
+        "Date": {
+            "$gte": start_date,
+            "$lt": end_date,
+        }
+    })
+
+    data = []
+    for post in posts_in_month:
+        formatted_post = {
+            "_id": str(post["_id"]),
+            "UserId": user_id,
+            "Records": post.get("Records", []),
+            "Comments": post.get("Comments", []),
+            "Visibility": post.get("Visibility", True),
+            "Date": post["Date"],
+            "Rating": calculateRating(post),
+            "CommentsNum": len(post.get("Comments", [])),
+            "SelfRating": calculateSelfRating(post),
+        }
+
+        data.append(formatted_post)
+
+    return {"data": data}
+
+
 @app.post("/api/record", tags=["API"])
 async def postPayload(user_id: str, year: int, month: int, day: int, request: Request):
     """
