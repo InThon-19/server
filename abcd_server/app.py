@@ -48,7 +48,7 @@ def transformPostList(pl):
     for post in pl:
         if "_id" in post:
             post["_id"] = str(post["_id"])
-        return post
+    return pl
 
 # @@ APIHandler ############################
 
