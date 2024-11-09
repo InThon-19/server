@@ -258,12 +258,13 @@ async def getCalendarPost(year: int, month: int, user_id: str):
     else:
         end_date = datetime(year, month+1, 1)
 
-    posts_in_month = post_collection.find({
+    posts_in_month = list(post_collection.find({
         "Date": {
             "$gte": start_date,
             "$lt": end_date,
-        }
-    })
+        },
+        "UserId": user_id
+    }))
 
     data = []
     for post in posts_in_month:
