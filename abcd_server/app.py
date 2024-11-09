@@ -1,13 +1,15 @@
 
+import os
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException, Request, Query
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 import uvicorn
-import models
+from gcp_utils import resize_and_convert_to_webp
 from datetime import datetime
-from abcd_server.models import Comment, Post, Record
+from models import Comment, Post, Record
 from models import db, user_collection, post_collection, record_collection
+from gcp_utils import bucket
 
 app = FastAPI(
     title="ABCD Api Server",
@@ -27,6 +29,26 @@ def calculateSelfRating(post):
     return rating
 
 # @@ APIHandler ############################
+
+@app.post("/api/img", tags=["API"])
+async def upload_image(file: UploadFile = File(...), width: int = 800, height: int = 800):
+    try:
+        original_image = await file.read()
+        webp_image = resize_and_convert_to_webp(original_image, width, height)
+        filename = os.path.splitext(file.filename)[0]
+
+        blob = bucket.blob(f"uploads/{filename}.webp")
+        blob.upload_from_string(webp_image, content_type="image/webp")
+
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": "Image uploaded successfully",
+                "url": blob.public_url
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading image: {e}")
 
 
 @app.get("/api/health", tags=["API"])
