@@ -1,7 +1,7 @@
 
 import os
 from bson import ObjectId
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status, Query
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status, Query, Body
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 import pytz
@@ -286,6 +286,35 @@ async def getCalendarPost(year: int, month: int, user_id: str):
         data.append(transformPost(formatted_post))
     return {"data": transformPostList(data)}
 
+
+@app.post("/api/comment", tags=["API"])
+async def create_comment(post_id: str = Query(...), comment: Comment = Body(...)):
+    # post_id로 게시물 찾기
+    post = post_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # 새로운 댓글 데이터 생성
+    new_comment = {
+        "_id": ObjectId(),
+        "UserId": comment.user_id,
+        "Rating": comment.rating,
+        "Body": comment.body,
+        "Date": datetime.utcnow()
+    }
+
+    # post 컬렉션의 해당 post에 댓글 추가
+    result = post_collection.update_one(
+        {"_id": ObjectId(post_id)},
+        {"$push": {"Comments": new_comment}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to add comment to the post")
+
+    # 업데이트된 댓글 데이터를 반환
+    new_comment["_id"] = str(new_comment["_id"])  # ObjectId를 문자열로 변환
+    return {"data": new_comment}
 
 @app.post("/api/record", tags=["API"])
 async def postRecord(user_id: str, year: int, month: int, day: int, request: Request):
