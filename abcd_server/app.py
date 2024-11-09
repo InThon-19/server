@@ -27,13 +27,13 @@ app.add_middleware(
 
 
 def calculateRating(post):
-    rating = sum(float(comment['Rating']) for comment in post.get(
+    rating = sum(float(comment.get('Rating') or 0.0) for comment in post.get(
         "Comments", [])) / (len(post.get("Comments", [])) or 1)
     return rating
 
 
 def calculateSelfRating(post):
-    rating = sum(float(record['SelfRating']) for record in post.get(
+    rating = sum(float(record.get('SelfRating') or 0.0) for record in post.get(
         "Records", [])) / (len(post.get("Records", [])) or 1)
     return rating
 
