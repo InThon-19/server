@@ -300,7 +300,6 @@ async def create_comment(post_id: str = Query(...), comment: Comment = Body(...)
         "UserId": comment.user_id,
         "Rating": comment.rating,
         "Body": comment.body,
-        "Date": datetime.utcnow()
     }
 
     # post 컬렉션의 해당 post에 댓글 추가
