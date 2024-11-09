@@ -17,9 +17,7 @@ The ABCD Project is a multi-functional social platform designed to empower users
 
 ## 🛠 Project Architecure
 
-![스크린샷 2024-11-10 오전 6 09 54](img width=)
-
-<img width="571" alt="스크린샷 2024-11-10 오전 6 09 54" src="https://github.com/user-attachments/assets/63a37152-0abc-40f3-8663-e9398df4b352">
+<img width="541" alt="스크린샷 2024-11-10 오전 6 49 59" src="https://github.com/user-attachments/assets/568234cd-9c5d-49e7-bf17-61d9501af246">
 
 ## 📽 Demo Video Link
 
