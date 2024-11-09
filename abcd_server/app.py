@@ -1,13 +1,13 @@
 
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 import uvicorn
 import models
 from datetime import datetime
 from abcd_server.models import Comment, Post, Record
-from models import db
+from models import db, user_collection, post_collection, record_collection
 
 app = FastAPI(
     title="ABCD Api Server",
@@ -38,6 +38,44 @@ async def checkStatus():
                  "datetime": str(current_time)}
     )
 
+
+
+@app.get("/api/user/{userId}")
+async def check_user_exists(userId: str):
+    user = user_collection.find_one({"UserId": userId})
+    if user:
+        # Return 200 with an empty `data` field
+        return {"data": {}}
+    else:
+        # Raise a 404 error if the user is not found
+        raise HTTPException(status_code=404, detail="User not found")
+    
+@app.post("/api/user/{userId}")
+async def register_user(userId: str, request: Request):
+    data = await request.json()
+    
+    # Check if the user already exists
+    existing_user = user_collection.find_one({"UserId": userId})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    # Insert the new user into the database
+    user_data = {
+        "UserId": userId,
+        "Nickname": data.get("Nickname"),
+        "Email": data.get("Email"),
+        "ProfileImage": data.get("ProfileImage")
+    }
+    result = user_collection.insert_one(user_data)
+
+    # Prepare the response data
+    return {
+        "data": {
+            "_id": str(result.inserted_id),
+            "UserId": userId,
+            "Email": data.get("Email")
+        }
+    }
 
 @app.get("/api/post/feed", tags=["API"])
 async def getFeed():

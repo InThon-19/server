@@ -80,3 +80,5 @@ client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
 user_collection = db["user"]
 post_collection = db["post"]
+record_collection = db["record"]
+comment_collection = db["comment"]
