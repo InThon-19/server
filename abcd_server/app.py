@@ -293,11 +293,12 @@ async def create_comment(post_id: str = Query(...), comment: Comment = Body(...)
     post = post_collection.find_one({"_id": ObjectId(post_id)})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    user_info = user_collection.find_one({"UserId": comment.user_id})
 
     # 새로운 댓글 데이터 생성
     new_comment = {
         "_id": ObjectId(),
-        "UserId": comment.user_id,
+        "User": transformPost(user_info),
         "Rating": comment.rating,
         "Body": comment.body,
     }
