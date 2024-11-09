@@ -6,13 +6,15 @@ from datetime import datetime
 from config import MONGO_URL, DB_NAME
 
 # Custom ObjectId for Pydantic v2 compatibility
+
+
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v, field=None):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
@@ -23,6 +25,8 @@ class PyObjectId(ObjectId):
         return schema
 
 # User model
+
+
 class User(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")  # Unique identifier for reference
@@ -35,6 +39,8 @@ class User(BaseModel):
         populate_by_name = True
 
 # Record model
+
+
 class Record(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")
@@ -53,6 +59,8 @@ class Record(BaseModel):
         populate_by_name = True
 
 # Comment model
+
+
 class Comment(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")
@@ -64,6 +72,8 @@ class Comment(BaseModel):
         populate_by_name = True
 
 # Post model
+
+
 class Post(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")
@@ -75,6 +85,7 @@ class Post(BaseModel):
     class Config:
         json_encoders = {ObjectId: str}
         populate_by_name = True
+
 
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]

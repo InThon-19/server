@@ -18,15 +18,21 @@ app = FastAPI(
 
 
 def calculateRating(post):
-    rating = sum(comment['rating'] for comment in post.get(
+    rating = sum(float(comment['Rating']) for comment in post.get(
         "Comments", [])) / (len(post.get("Comments", [])) or 1)
     return rating
 
 
 def calculateSelfRating(post):
-    rating = sum(record['self_rating'] for record in post.get(
+    rating = sum(float(record['SelfRating']) for record in post.get(
         "Records", [])) / (len(post.get("Records", [])) or 1)
     return rating
+
+
+def transformPost(post):
+    if "_id" in post:
+        post["_id"] = str(post["_id"])
+    return post
 
 # @@ APIHandler ############################
 
@@ -167,11 +173,6 @@ async def postRecord(user_id: str, year: int, month: int, day: int, request: Req
         "Date": datetime.now()
     }
 
-    def transform_post(post):
-        if "_id" in post:
-            post["_id"] = str(post["_id"])
-        return post
-
     exist_post = list(post_collection.find(
         {"UserId": user_id}).sort('Date', -1).limit(1))
 
@@ -183,24 +184,24 @@ async def postRecord(user_id: str, year: int, month: int, day: int, request: Req
                 {"_id": exist_post[0]["_id"]},
                 {"$push": {"Records": new_records}}
             )
-            return {"data": transform_post(exist_post[0])}
+            return {"data": transformPost(exist_post[0])}
 
     post_collection.insert_one(data)
-    return {"data": transform_post(data)}
+    return {"data": transformPost(data)}
 
 
 @app.get("/api/post/feed", tags=["API"])
 async def getFeed():
-    latest_posts30 = post_collection.find().sort('_id', -1).limit(30)
+    latest_posts30 = list(post_collection.find().sort('Date', -1).limit(30))
     data = []
     for post in latest_posts30:
-        user_info = user_collection.find_one({"_id": post["UserId"]})
+        user_info = user_collection.find_one({"UserId": post["UserId"]})
 
-        is_yesterday = (datetime.now() - post['date']).days == 1
+        is_yesterday = (datetime.now() - post['Date']).days == 1
 
         formatted_post = {
-            "_id": str(post["_id"]),
-            "UserId": user_info,
+            "_id": post["_id"],
+            "UserId": transformPost(user_info),
             "Records": post.get("Records", []),
             "Comments": post.get("Comments", []),
             "Visibility": post.get("Visibility", True),
@@ -210,7 +211,7 @@ async def getFeed():
             "SelfRating": calculateSelfRating(post),
         }
 
-        data.append(formatted_post)
+        data.append(transformPost(formatted_post))
 
     return {"data": data}
 
