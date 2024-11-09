@@ -20,13 +20,13 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
 
     @classmethod
-    def __get_pydantic_json_schema__(cls, schema):
-        schema.update(type="string")
-        return schema
+    def json_schema(cls):
+        return {
+            "type": "string",
+            "format": "objectid",
+        }
 
 # User model
-
-
 class User(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")  # Unique identifier for reference
