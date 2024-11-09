@@ -205,6 +205,16 @@ def get_top_commented_posts():
                 }
             }
         },
+         {
+            "$lookup": {
+                "from": "user1",
+                "localField": "UserId",
+                "foreignField": "UserId",
+                "as": "UserId"
+            }
+        },{
+            "$unwind": "$UserId" 
+        },
         {
             "$addFields": {
                 "comment_count": {"$size": "$Comments"}
@@ -239,12 +249,15 @@ def get_top_commented_posts():
     for post in result:
         if "_id" in post.keys():
             post["_id"] = str(post["_id"])
+        if "_id" in post["UserId"].keys():
+            post["UserId"]["_id"] = str(post["UserId"]["_id"])
         for record in post["Records"]:
             if "_id" in record.keys():
                 record["_id"] = str(record["_id"])
         for comment in post["Comments"]:
             if "_id" in comment.keys():
                 comment["_id"] = str(comment["_id"])
+
 
     if not result:
         raise HTTPException(
@@ -376,6 +389,13 @@ async def getFeed():
     for post in latest_posts30:
         user_info = user_collection.find_one({"UserId": post["UserId"]})
 
+        # print("user_info: ",len(user_info))
+        # print("detail: ",user_info)
+        # for user in user_info:
+        #     print(user.user_id)
+        # print("-----")
+        if(user_info == None):
+            continue
         is_yesterday = (datetime.now() - post['Date']).days == 1
 
         formatted_post = {
