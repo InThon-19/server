@@ -27,6 +27,8 @@ class User(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")  # Unique identifier for reference
     email: str = Field(alias="Email")
+    nickname: str = Field(alias="Nickname")
+    profile_image: Optional[str] = Field(alias="ProfileImage")
 
     class Config:
         json_encoders = {ObjectId: str}
@@ -76,3 +78,5 @@ class Post(BaseModel):
 
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
+user_collection = db["user"]
+post_collection = db["post"]
