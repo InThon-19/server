@@ -4,18 +4,27 @@ from bson import ObjectId
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status, Query
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
+import pytz
+import pytz
 import uvicorn
 from gcp_utils import resize_and_convert_to_webp
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import Comment, Post, Record
 from models import db, user_collection, post_collection, record_collection
 from gcp_utils import bucket
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
-
 
 app = FastAPI(
     title="ABCD Api Server",
     description="This is the API server for ABCD project.",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
 
@@ -173,6 +182,186 @@ async def getUserRatings(userId: str, date: str = Query("day"), count: int = 30)
     return {"data": data}
 
 
+@app.get("/api/post/oscar/")
+def get_top_commented_posts():
+    # Set timezone to Korea Standard Time (KST)
+    KST = pytz.timezone('Asia/Seoul')
+    now = datetime.now(KST)
+
+    # Calculate the start and end of yesterday in KST
+    start_of_yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_yesterday = (now - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    print(start_of_yesterday, end_of_yesterday)
+    
+    posts = post_collection.aggregate([
+        {
+            "$match": {
+                "Date": {
+                    "$gte": start_of_yesterday,
+                    "$lte": end_of_yesterday
+                }
+            }
+        },
+        {
+            "$addFields": {
+                "comment_count": {"$size": "$Comments"}
+            }
+        },
+        {
+            "$sort": {
+                "comment_count": -1
+            }
+        },
+        {
+            "$limit": 3
+        },
+        {
+            "$project": {
+                "_id": 0,  # Exclude MongoDB ID
+                "UserId": 1,
+                "Records": 1,
+                "Comments": 1,
+                "Date": 1,
+                "Visibility": 1,
+                "comment_count": 1
+            }
+        }
+    ])
+
+    result = list(posts)
+
+    for post in result:
+        if "_id" in post.keys():
+            post["_id"] = str(post["_id"])
+        for record in post["Records"]:
+            if "_id" in record.keys():
+                record["_id"] = str(record["_id"])
+        for comment in post["Comments"]:
+            if "_id" in comment.keys():
+                comment["_id"] = str(comment["_id"])
+
+    if not result:
+        raise HTTPException(status_code=404, detail="No posts found for yesterday")
+
+    return {"top_commented_posts": result}
+
+@app.get("/api/post/oscar/")
+def get_top_commented_posts():
+    # Set timezone to Korea Standard Time (KST)
+    KST = pytz.timezone('Asia/Seoul')
+    now = datetime.now(KST)
+
+    # Calculate the start and end of yesterday in KST
+    start_of_yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_yesterday = (now - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    print(start_of_yesterday, end_of_yesterday)
+    
+    # Query to find posts from yesterday and sort by number of comments
+    posts = post_collection.aggregate([
+        {
+            "$match": {
+                "Date": {
+                    "$gte": start_of_yesterday,
+                    "$lte": end_of_yesterday
+                }
+            }
+        },
+        # {
+        #     "$addFields": {
+        #         "comment_count": {"$size": "$comments"}
+        #     }
+        # },
+        # {
+        #     "$sort": {
+        #         "comment_count": -1
+        #     }
+        # },
+        # {
+        #     "$limit": 3
+        # },
+        # {
+        #     "$project": {
+        #         "_id": 0,  # Exclude MongoDB ID
+        #         "user_id": 1,
+        #         "records": 1,
+        #         "comments": 1,
+        #         "date": 1,
+        #         "visibility": 1,
+        #         "comment_count": 1
+        #     }
+        # }
+    ])
+
+    result = list(posts)
+    for post in posts:
+        post["_id"] = str(post["_id"])
+
+    print(result)
+    if not result:
+        raise HTTPException(status_code=404, detail="No posts found for yesterday")
+
+    return {"top_commented_posts": result}
+
+@app.get("/api/post/oscar/")
+def get_top_commented_posts():
+    # Set timezone to Korea Standard Time (KST)
+    KST = pytz.timezone('Asia/Seoul')
+    now = datetime.now(KST)
+
+    # Calculate the start and end of yesterday in KST
+    start_of_yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_yesterday = (now - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    print(start_of_yesterday, end_of_yesterday)
+    
+    # Query to find posts from yesterday and sort by number of comments
+    posts = post_collection.aggregate([
+        {
+            "$match": {
+                "Date": {
+                    "$gte": start_of_yesterday,
+                    "$lte": end_of_yesterday
+                }
+            }
+        },
+        # {
+        #     "$addFields": {
+        #         "comment_count": {"$size": "$comments"}
+        #     }
+        # },
+        # {
+        #     "$sort": {
+        #         "comment_count": -1
+        #     }
+        # },
+        # {
+        #     "$limit": 3
+        # },
+        # {
+        #     "$project": {
+        #         "_id": 0,  # Exclude MongoDB ID
+        #         "user_id": 1,
+        #         "records": 1,
+        #         "comments": 1,
+        #         "date": 1,
+        #         "visibility": 1,
+        #         "comment_count": 1
+        #     }
+        # }
+    ])
+
+    result = list(posts)
+    for post in posts:
+        post["_id"] = str(post["_id"])
+
+    print(result)
+    if not result:
+        raise HTTPException(status_code=404, detail="No posts found for yesterday")
+
+    return {"top_commented_posts": result}
+
 @app.get("/api/post", tags=["API"])
 async def getCalendarPost(year: int, month: int, user_id: str):
     start_date = datetime(year, month, 1)
@@ -284,6 +473,15 @@ async def getFeed():
         data.append(transformPost(formatted_post))
 
     return {"data": transformPostList(data)}
+
+
+
+
+
+
+
+
+
 
 
 def to_object_id(id: str):
