@@ -39,7 +39,7 @@ async def checkStatus():
     )
 
 
-@app.get("/api/user/{userId}")
+@app.get("/api/user/{userId}", tags=["API"])
 async def check_user_exists(userId: str):
     user = user_collection.find_one({"UserId": userId})
     if user:
@@ -48,7 +48,7 @@ async def check_user_exists(userId: str):
         raise HTTPException(status_code=404, detail="User not found")
 
 
-@app.post("/api/user/{userId}")
+@app.post("/api/user/{userId}", tags=["API"])
 async def register_user(userId: str, request: Request):
     data = await request.json()
 
@@ -71,6 +71,53 @@ async def register_user(userId: str, request: Request):
             "Email": data.get("Email")
         }
     }
+
+
+@app.post("/api/record", tags=["API"])
+async def postPayload(user_id: str, year: int, month: int, day: int, request: Request):
+    """
+    request
+        When string
+        Who string
+        Where string
+        What string
+        How string
+        Why string
+        Image string
+        SelfRating float
+        Date Date
+    """
+    payload = await request.json()
+    new_records = {
+        "UserId": user_id,
+        "When": payload.get("When"),
+        "Who": payload.get("Who"),
+        "Where": payload.get("Where"),
+        "What": payload.get("What"),
+        "How": payload.get("How"),
+        "Why": payload.get("Why"),
+        "Image": payload.get("Image"),
+        "SelfRating": payload.get("SelfRating"),
+        "Date": payload.get("Date"),
+    }
+
+    exist_post = post_collection.find().sort('Date', -1).limit(1)
+    if exist_post.count() > 0:
+        latest_date = exist_post[0]['Date'].date()
+        today_date = datetime.now().date()
+
+        if latest_date == today_date:  # if already exist -> get data and append payload
+            exist_post.get("Records").append(new_records)
+            return {"data": exist_post}
+        else:  # no, then append payload and save to db
+            data = {
+                "UserId": user_id,
+                "Records": [new_records],
+                "Comments": [],
+                "Visibility": True,
+                "Date": datetime.now().date()
+            }
+            return {"data": data}
 
 
 @app.get("/api/post/feed", tags=["API"])
