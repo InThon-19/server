@@ -39,22 +39,27 @@ async def checkStatus():
     )
 
 
-
 @app.get("/api/user/{userId}")
 async def check_user_exists(userId: str):
     user = user_collection.find_one({"UserId": userId})
     if user:
+        # Return 200 with an empty `data` field
         return {"data": {}}
     else:
+        # Raise a 404 error if the user is not found
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+
 @app.post("/api/user/{userId}")
 async def register_user(userId: str, request: Request):
     data = await request.json()
+
+    # Check if the user already exists
     existing_user = user_collection.find_one({"UserId": userId})
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
-    
+
+    # Insert the new user into the database
     user_data = {
         "UserId": userId,
         "Nickname": data.get("Nickname"),
@@ -63,6 +68,7 @@ async def register_user(userId: str, request: Request):
     }
     result = user_collection.insert_one(user_data)
 
+    # Prepare the response data
     return {
         "data": {
             "_id": str(result.inserted_id),
@@ -71,12 +77,13 @@ async def register_user(userId: str, request: Request):
         }
     }
 
+
 @app.get("/api/post/feed", tags=["API"])
 async def getFeed():
-    latest_posts30 = db['post'].find().sort('_id', -1).limit(30)
+    latest_posts30 = post_collection.find().sort('_id', -1).limit(30)
     data = []
     for post in latest_posts30:
-        user_info = db['user'].find_one({"_id": post["UserId"]})
+        user_info = user_collection.find_one({"_id": post["UserId"]})
 
         is_yesterday = (datetime.now() - post['date']).days == 1
 
