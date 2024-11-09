@@ -30,6 +30,7 @@ def calculateSelfRating(post):
 
 # @@ APIHandler ############################
 
+
 @app.post("/api/img", tags=["API"])
 async def upload_image(file: UploadFile = File(...), width: int = 800, height: int = 800):
     try:
@@ -48,7 +49,8 @@ async def upload_image(file: UploadFile = File(...), width: int = 800, height: i
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error uploading image: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error uploading image: {e}")
 
 
 @app.get("/api/health", tags=["API"])
@@ -130,7 +132,7 @@ async def getCalendarPost(year: int, month: int, user_id: str):
 
 
 @app.post("/api/record", tags=["API"])
-async def postPayload(user_id: str, year: int, month: int, day: int, request: Request):
+async def postRecord(user_id: str, year: int, month: int, day: int, request: Request):
     """
     request
         When string
@@ -157,23 +159,34 @@ async def postPayload(user_id: str, year: int, month: int, day: int, request: Re
         "Date": payload.get("Date"),
     }
 
-    exist_post = post_collection.find().sort('Date', -1).limit(1)
-    if exist_post.count() > 0:
-        latest_date = exist_post[0]['Date'].date()
-        today_date = datetime.now().date()
+    data = {
+        "UserId": user_id,
+        "Records": [new_records],
+        "Comments": [],
+        "Visibility": True,
+        "Date": datetime.now()
+    }
 
-        if latest_date == today_date:  # if already exist -> get data and append payload
-            exist_post.get("Records").append(new_records)
-            return {"data": exist_post}
-        else:  # no, then append payload and save to db
-            data = {
-                "UserId": user_id,
-                "Records": [new_records],
-                "Comments": [],
-                "Visibility": True,
-                "Date": datetime.now().date()
-            }
-            return {"data": data}
+    def transform_post(post):
+        if "_id" in post:
+            post["_id"] = str(post["_id"])
+        return post
+
+    exist_post = list(post_collection.find(
+        {"UserId": user_id}).sort('Date', -1).limit(1))
+
+    if len(exist_post) > 0:
+        latest_date = exist_post[0]['Date']
+
+        if latest_date.year == year and latest_date.month == month and latest_date.day == day:
+            post_collection.update_one(
+                {"_id": exist_post[0]["_id"]},
+                {"$push": {"Records": new_records}}
+            )
+            return {"data": transform_post(exist_post[0])}
+
+    post_collection.insert_one(data)
+    return {"data": transform_post(data)}
 
 
 @app.get("/api/post/feed", tags=["API"])
