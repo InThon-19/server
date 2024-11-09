@@ -205,15 +205,15 @@ def get_top_commented_posts():
                 }
             }
         },
-         {
+        {
             "$lookup": {
                 "from": "user1",
                 "localField": "UserId",
                 "foreignField": "UserId",
                 "as": "UserId"
             }
-        },{
-            "$unwind": "$UserId" 
+        }, {
+            "$unwind": "$UserId"
         },
         {
             "$addFields": {
@@ -257,7 +257,6 @@ def get_top_commented_posts():
         for comment in post["Comments"]:
             if "_id" in comment.keys():
                 comment["_id"] = str(comment["_id"])
-
 
     if not result:
         raise HTTPException(
@@ -323,11 +322,13 @@ async def create_comment(post_id: str = Query(...), comment: Comment = Body(...)
     )
 
     if result.modified_count == 0:
-        raise HTTPException(status_code=500, detail="Failed to add comment to the post")
+        raise HTTPException(
+            status_code=500, detail="Failed to add comment to the post")
 
     # 업데이트된 댓글 데이터를 반환
     new_comment["_id"] = str(new_comment["_id"])  # ObjectId를 문자열로 변환
     return {"data": new_comment}
+
 
 @app.post("/api/record", tags=["API"])
 async def postRecord(user_id: str, year: int, month: int, day: int, request: Request):
@@ -389,12 +390,7 @@ async def getFeed():
     for post in latest_posts30:
         user_info = user_collection.find_one({"UserId": post["UserId"]})
 
-        # print("user_info: ",len(user_info))
-        # print("detail: ",user_info)
-        # for user in user_info:
-        #     print(user.user_id)
-        # print("-----")
-        if(user_info == None):
+        if (user_info == None):
             continue
         is_yesterday = (datetime.now() - post['Date']).days == 1
 
@@ -409,6 +405,14 @@ async def getFeed():
             "CommentsNum": len(post.get("Comments", [])),
             "SelfRating": calculateSelfRating(post),
         }
+
+        for comment in formatted_post["Comments"]:
+            comment_user_info = user_collection.find_one(
+                {"UserId": comment.get("UserId")})
+            if (comment_user_info == None):
+                break
+
+            comment["UserId"] = transformPost(comment_user_info)
 
         data.append(transformPost(formatted_post))
 
