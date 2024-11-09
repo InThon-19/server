@@ -89,7 +89,9 @@ class Post(BaseModel):
 
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
-user_collection = db["user"]
-post_collection = db["post"]
+# user_collection = db["user"]
+# post_collection = db["post"]
 record_collection = db["record"]
 comment_collection = db["comment"]
+user_collection = db["user1"]
+post_collection = db["post1"]

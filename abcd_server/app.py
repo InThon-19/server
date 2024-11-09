@@ -220,7 +220,7 @@ def get_top_commented_posts():
         },
         {
             "$project": {
-                "_id": 0,  # Exclude MongoDB ID
+                "_id": 1,
                 "UserId": 1,
                 "Records": 1,
                 "Comments": 1,
@@ -250,7 +250,7 @@ def get_top_commented_posts():
         raise HTTPException(
             status_code=404, detail="No posts found for yesterday")
 
-    return {"top_commented_posts": result}
+    return {"data": result}
 
 
 @app.get("/api/post", tags=["API"])
@@ -284,7 +284,6 @@ async def getCalendarPost(year: int, month: int, user_id: str):
         }
 
         data.append(transformPost(formatted_post))
-
     return {"data": transformPostList(data)}
 
 
