@@ -43,10 +43,8 @@ async def checkStatus():
 async def check_user_exists(userId: str):
     user = user_collection.find_one({"UserId": userId})
     if user:
-        # Return 200 with an empty `data` field
         return {"data": {}}
     else:
-        # Raise a 404 error if the user is not found
         raise HTTPException(status_code=404, detail="User not found")
 
 
@@ -54,12 +52,10 @@ async def check_user_exists(userId: str):
 async def register_user(userId: str, request: Request):
     data = await request.json()
 
-    # Check if the user already exists
     existing_user = user_collection.find_one({"UserId": userId})
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    # Insert the new user into the database
     user_data = {
         "UserId": userId,
         "Nickname": data.get("Nickname"),
@@ -68,7 +64,6 @@ async def register_user(userId: str, request: Request):
     }
     result = user_collection.insert_one(user_data)
 
-    # Prepare the response data
     return {
         "data": {
             "_id": str(result.inserted_id),
