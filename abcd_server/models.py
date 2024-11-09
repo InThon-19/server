@@ -1,17 +1,71 @@
+# models.py
 from pydantic import BaseModel, Field
+from typing import List, Optional
+from bson import ObjectId
+from datetime import datetime
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(v)
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type="string")
+
 
 class User(BaseModel):
-    username: str = Field(..., min_length=3, max_length=20)
-    email: str = Field(..., regex="^[\w\.-]+@[\w\.-]+\.\w{2,4}$")
-    full_name: str = Field(..., min_length=1)
-    age: int = Field(..., ge=0, le=120)
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str = Field(alias="UserId")  # Unique identifier for reference
+    email: str = Field(alias="Email")
 
     class Config:
-        schema_extra = {
-            "example": {
-                "username": "john_doe",
-                "email": "john@example.com",
-                "full_name": "John Doe",
-                "age": 30,
-            }
-        }
+        json_encoders = {ObjectId: str}
+        allow_population_by_field_name = True
+
+class Record(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str = Field(alias="UserId")
+    when: str = Field(alias="When")
+    who: str = Field(alias="Who")
+    where: str = Field(alias="Where")
+    what: str = Field(alias="What")
+    how: str = Field(alias="How")
+    why: str = Field(alias="Why")
+    image: Optional[str] = Field(alias="Image")
+    date: datetime = Field(alias="Date")
+    self_rating: float = Field(default=0.0, alias="SelfRating")
+
+    class Config:
+        json_encoders = {ObjectId: str}
+        allow_population_by_field_name = True
+
+# Comment model
+class Comment(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str = Field(alias="UserId")
+    rating: Optional[float] = Field(default=0.0, alias="Rating")
+    body: str = Field(alias="Body")
+
+    class Config:
+        json_encoders = {ObjectId: str}
+        allow_population_by_field_name = True
+
+# Post model
+class Post(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str = Field(alias="UserId")
+    records: List[Record] = Field(default=[], alias="Records")
+    comments: List[Comment] = Field(default=[], alias="Comments")
+    visibility: bool = Field(default=True, alias="Visibility")
+    date: datetime = Field(alias="Date")
+
+    class Config:
+        json_encoders = {ObjectId: str}
+        allow_population_by_field_name = True
