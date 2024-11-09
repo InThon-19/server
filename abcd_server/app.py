@@ -1,7 +1,7 @@
 
 import os
 from bson import ObjectId
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status, Query
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 import uvicorn
@@ -10,6 +10,8 @@ from datetime import datetime
 from models import Comment, Post, Record
 from models import db, user_collection, post_collection, record_collection
 from gcp_utils import bucket
+from typing import Dict
+
 
 app = FastAPI(
     title="ABCD Api Server",
@@ -101,6 +103,67 @@ async def registerUser(userId: str, request: Request):
             "Email": data.get("Email")
         }
     }
+
+@app.get("/api/user/{userId}/rating", tags=["API"])
+async def getUserRatings(userId: str, date: str = Query("day"), count: int = 30) -> Dict:
+    if date == "day":
+        # 일별 데이터: 최신순으로 게시물을 count 개수만큼 조회
+        posts = post_collection.find({"UserId": userId}).sort("Date", -1).limit(count)
+        data = [
+            {
+                "self_rating": calculateSelfRating(post),
+                "comment_rating": calculateRating(post),
+                "date": str(post["Date"].date())
+            }
+            for post in posts
+        ]
+
+    elif date == "month":
+        # 월별 데이터: 연도와 월별로 그룹화하여 count 개수만큼 최신 데이터를 조회
+        posts = post_collection.aggregate([
+            {"$match": {"UserId": userId}},
+            {"$group": {
+                "_id": {"year": {"$year": "$Date"}, "month": {"$month": "$Date"}},
+                "posts": {"$push": "$$ROOT"}
+            }},
+            {"$sort": {"_id.year": -1, "_id.month": -1}},
+            {"$limit": count}
+        ])
+
+        data = [
+            {
+                "self_rating": sum(calculateSelfRating(post) for post in month["posts"]) / len(month["posts"]),
+                "comment_rating": sum(calculateRating(post) for post in month["posts"]) / len(month["posts"]),
+                "date": f"{month['_id']['year']}-{month['_id']['month']:02}"
+            }
+            for month in posts
+        ]
+
+    elif date == "year":
+        # 연별 데이터: 연도로 그룹화하여 count 개수만큼 최신 데이터를 조회
+        posts = post_collection.aggregate([
+            {"$match": {"UserId": userId}},
+            {"$group": {
+                "_id": {"year": {"$year": "$Date"}},
+                "posts": {"$push": "$$ROOT"}
+            }},
+            {"$sort": {"_id.year": -1}},
+            {"$limit": count}
+        ])
+
+        data = [
+            {
+                "self_rating": sum(calculateSelfRating(post) for post in year["posts"]) / len(year["posts"]),
+                "comment_rating": sum(calculateRating(post) for post in year["posts"]) / len(year["posts"]),
+                "date": f"{year['_id']['year']}"
+            }
+            for year in posts
+        ]
+
+    else:
+        raise HTTPException(status_code=400, detail="Invalid date parameter. Use 'day', 'month', or 'year'.")
+
+    return {"data": data}
 
 
 @app.get("/api/post", tags=["API"])
