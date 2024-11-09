@@ -1,9 +1,11 @@
-# models.py
+from pymongo import MongoClient
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from bson import ObjectId
 from datetime import datetime
+from config import MONGO_URL, DB_NAME
 
+# Custom ObjectId for Pydantic v2 compatibility
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
@@ -16,10 +18,11 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
 
     @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+    def __get_pydantic_json_schema__(cls, schema):
+        schema.update(type="string")
+        return schema
 
-
+# User model
 class User(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")  # Unique identifier for reference
@@ -27,8 +30,9 @@ class User(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
+# Record model
 class Record(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: str = Field(alias="UserId")
@@ -44,7 +48,7 @@ class Record(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 # Comment model
 class Comment(BaseModel):
@@ -55,7 +59,7 @@ class Comment(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 # Post model
 class Post(BaseModel):
@@ -68,4 +72,7 @@ class Post(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
+
+client = MongoClient(MONGO_URL)
+db = client[DB_NAME]
