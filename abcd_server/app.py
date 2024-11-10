@@ -295,6 +295,14 @@ async def getCalendarPost(year: int, month: int, user_id: str):
             "SelfRating": calculateSelfRating(post),
         }
 
+        for comment in formatted_post["Comments"]:
+            comment_user_info = user_collection.find_one(
+                {"UserId": comment.get("UserId")})
+            if (comment_user_info == None):
+                break
+
+            comment["UserId"] = transformPost(comment_user_info)
+
         data.append(transformPost(formatted_post))
     return {"data": transformPostList(data)}
 
